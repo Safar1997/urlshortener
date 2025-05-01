@@ -19,5 +19,7 @@ cmd/shortener/shortener
 vendor/
 
 # IDEs directories
+.DS_Store
 .idea
 .vscode
+.history/
