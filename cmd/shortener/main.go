@@ -10,16 +10,6 @@ import (
 )
 
 func postHandler(w http.ResponseWriter, r *http.Request, urlMap map[string]string) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "только POST-запросы разрешены", http.StatusMethodNotAllowed)
-		return
-	}
-
-	if r.URL.Path != "/" {
-		http.Error(w, "неверный путь", http.StatusNotFound)
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "ошибка чтения тела запроса", http.StatusInternalServerError)
@@ -64,20 +54,16 @@ func getHandler(w http.ResponseWriter, r *http.Request, urlMap map[string]string
 func main() {
 	urlMap := make(map[string]string)
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost && r.URL.Path == "/" {
-			postHandler(w, r, urlMap)
-		} else {
-			getHandler(w, r, urlMap)
-		}
-	})
-
 	// создаём новый роутер chi
 	r := chi.NewRouter()
 
 	// добавляем простой обработчик на GET /
 	r.Post("/", func(rw http.ResponseWriter, r *http.Request) {
 		postHandler(rw, r, urlMap)
+	})
+
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "неверный путь", http.StatusNotFound)
 	})
 
 	// добавляем обработчик с параметром id
