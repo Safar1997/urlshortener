@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/Safar1997/urlshortener/internal/app"
+	"github.com/go-chi/chi/v5"
 )
 
 func postHandler(w http.ResponseWriter, r *http.Request, urlMap map[string]string) {
@@ -43,19 +43,15 @@ func postHandler(w http.ResponseWriter, r *http.Request, urlMap map[string]strin
 }
 
 func getHandler(w http.ResponseWriter, r *http.Request, urlMap map[string]string) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "только GET-запросы разрешены", http.StatusMethodNotAllowed)
-		return
-	}
+	id := chi.URLParam(r, "id")
 
-	path := strings.TrimPrefix(r.URL.Path, "/")
-	if path == "" {
+	if id == "" {
 		http.Error(w, "не указан ID", http.StatusBadRequest)
 		return
 	}
-
+	// Проверяем, существует ли ID в urlMap
 	for originalURL, shortID := range urlMap {
-		if shortID == path {
+		if shortID == id {
 			w.Header().Set("Location", originalURL)
 			w.WriteHeader(http.StatusTemporaryRedirect) // 307
 			return
@@ -76,6 +72,20 @@ func main() {
 		}
 	})
 
-	fmt.Println("Сервер запущен на http://localhost:8080")
-	http.ListenAndServe(":8080", nil)
+	// создаём новый роутер chi
+	r := chi.NewRouter()
+
+	// добавляем простой обработчик на GET /
+	r.Post("/", func(rw http.ResponseWriter, r *http.Request) {
+		postHandler(rw, r, urlMap)
+	})
+
+	// добавляем обработчик с параметром id
+	r.Get("/{id}", func(rw http.ResponseWriter, r *http.Request) {
+		getHandler(rw, r, urlMap)
+	})
+
+	// запускаем HTTP-сервер на порту 8080
+	fmt.Println("Сервер запущен на порту :8080")
+	http.ListenAndServe(":8080", r)
 }
